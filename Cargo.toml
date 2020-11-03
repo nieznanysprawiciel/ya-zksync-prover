@@ -1,0 +1,31 @@
+[package]
+name = "ya-zksync-node"
+version = "0.1.0"
+authors = ["nieznany.sprawiciel <witek@golem.network>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ya-client = { version = "0.4" }
+ya-agreement-utils = "0.1"
+
+yarapi = { git="https://github.com/golemfactory/yarapi" }
+zksync = { git="https://github.com/matter-labs/zksync" }
+
+actix = "0.9"
+actix-rt = "1.0"
+anyhow = "1.0.28"
+bigdecimal = "0.1.0"
+chrono = "0.4.10"
+dotenv = "0.15.0"
+env_logger = "0.6"
+futures = "0.3"
+log = "0.4"
+secp256k1 = "0.17"
+semver = "0.10.0"
+serde_json = "1.0"
+sha3 = "0.9.1"
+structopt = "0.3"
+tokio = { version = "0.2.10", features = ["fs"] }
+url = "2.1.1"
