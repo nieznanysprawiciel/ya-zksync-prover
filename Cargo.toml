@@ -12,6 +12,7 @@ ya-agreement-utils = "0.1"
 
 yarapi = { git="https://github.com/golemfactory/yarapi" }
 zksync = { git="https://github.com/matter-labs/zksync" }
+zksync_prover = { git="https://github.com/matter-labs/zksync" }
 
 actix = "0.9"
 actix-rt = "1.0"
