@@ -49,7 +49,7 @@ pub async fn prove_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<()>
     use std::fs::File;
 
     let data_path = PathBuf::from("prover_data.json");
-    let file = File::open(&data_path).map_err(|e| {
+    let file = File::create(&data_path).map_err(|e| {
         anyhow!(
             "Can't open data file [{}]. Error: {}",
             data_path.display(),
