@@ -39,19 +39,20 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
     .to_string();
 
     let subscription = market.subscribe(&props, &constraints).await?;
+    log::info!("Created subscription [{}]", subscription.id().as_ref());
 
     let proposals = subscription.proposals();
     futures::pin_mut!(proposals);
     while let Some(proposal) = proposals.try_next().await? {
         log::info!(
-            "got proposal: {} -- from: {}, draft: {:?}",
+            "Got proposal: {} -- from: {}, draft: {:?}",
             proposal.id(),
             proposal.issuer_id(),
             proposal.state()
         );
         if proposal.is_response() {
             let agreement = proposal.create_agreement(deadline).await?;
-            log::info!("created agreement {}", agreement.id());
+            log::info!("Created agreement {}", agreement.id());
             if let Err(e) = agreement.confirm().await {
                 log::error!("wait_for_approval failed: {:?}", e);
                 continue;
@@ -59,7 +60,7 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
             return Ok(agreement);
         }
         let id = proposal.counter_proposal(&props, &constraints).await?;
-        log::info!("got: {}", id);
+        log::info!("Got: {}", id);
     }
     unimplemented!()
 }
@@ -92,13 +93,17 @@ pub async fn main() -> anyhow::Result<()> {
         .with(async {
             let agreement = create_agreement(session.market()?, &args.subnet).await?;
 
+            log::info!("Registering prover..");
             let prover_id = zksync_client.register_prover(0).await?;
+            log::info!("Registered prover under id [{}].", prover_id);
+
             //let activity = session.create_activity(&agreement).await?;
             //let runner = ProverRunner::new(activity, prover_id);
 
             // TODO: run zksync in loop here
             prove_block(zksync_client.clone()).await?;
 
+            log::info!("Stopping prover on zksync server..");
             zksync_client.prover_stopped(prover_id).await?;
             //activity.destroy().await?;
 
