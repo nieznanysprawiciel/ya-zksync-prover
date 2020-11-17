@@ -4288,12 +4288,14 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "backoff",
  "bigdecimal",
  "chrono",
  "dotenv",
  "env_logger",
  "futures 0.3.7",
  "log",
+ "reqwest",
  "secp256k1",
  "semver 0.10.0",
  "serde_json",
@@ -4305,7 +4307,9 @@ dependencies = [
  "ya-client",
  "yarapi",
  "zksync",
+ "zksync_crypto",
  "zksync_prover",
+ "zksync_prover_utils",
 ]
 
 [[package]]
@@ -4351,7 +4355,7 @@ checksum = "05f33972566adbd2d3588b0491eb94b98b43695c4ef897903470ede4f3f5a28a"
 [[package]]
 name = "zksync"
 version = "0.1.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "bellman_ce",
  "ethabi",
@@ -4377,7 +4381,7 @@ dependencies = [
 [[package]]
 name = "zksync_basic_types"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "web3",
 ]
@@ -4385,7 +4389,7 @@ dependencies = [
 [[package]]
 name = "zksync_circuit"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "log",
@@ -4400,7 +4404,7 @@ dependencies = [
 [[package]]
 name = "zksync_config"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "log",
  "url",
@@ -4411,7 +4415,7 @@ dependencies = [
 [[package]]
 name = "zksync_contracts"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "ethabi",
  "serde_json",
@@ -4420,7 +4424,7 @@ dependencies = [
 [[package]]
 name = "zksync_crypto"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "fnv",
@@ -4437,7 +4441,7 @@ dependencies = [
 [[package]]
 name = "zksync_eth_client"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "ethabi",
@@ -4452,7 +4456,7 @@ dependencies = [
 [[package]]
 name = "zksync_eth_signer"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "async-trait",
  "hex",
@@ -4470,7 +4474,7 @@ dependencies = [
 [[package]]
 name = "zksync_prover"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "backoff",
@@ -4499,7 +4503,7 @@ dependencies = [
 [[package]]
 name = "zksync_prover_utils"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "backoff",
@@ -4515,7 +4519,7 @@ dependencies = [
 [[package]]
 name = "zksync_state"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "log",
@@ -4528,7 +4532,7 @@ dependencies = [
 [[package]]
 name = "zksync_types"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "chrono",
@@ -4547,7 +4551,7 @@ dependencies = [
 [[package]]
 name = "zksync_utils"
 version = "1.0.0"
-source = "git+https://github.com/matter-labs/zksync#cd2ce483335943a140e521aa070c88fcc6f03680"
+source = "git+https://github.com/nieznanysprawiciel/zksync?branch=yagna-prover/prototype#1abdc0ad6a7f0b9273678608c9b2301203e4a0e6"
 dependencies = [
  "anyhow",
  "bigdecimal",
