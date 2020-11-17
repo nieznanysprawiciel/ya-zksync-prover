@@ -1,7 +1,6 @@
 mod prover_runner;
 mod zksync_client;
 
-use anyhow::anyhow;
 use chrono::Utc;
 use futures::prelude::*;
 use std::ops::Add;
@@ -14,11 +13,8 @@ use ya_client::web::WebClient;
 use yarapi::requestor::Image;
 use yarapi::rest::{self, Activity};
 use zksync_client::ZksyncClient;
-use zksync_crypto::proof::EncodedProofPlonk;
 
-use crate::prover_runner::ProverRunner;
-use std::path::PathBuf;
-use std::sync::Arc;
+use crate::prover_runner::prove_block;
 
 const PACKAGE: &str = "{TODO package}";
 
@@ -84,7 +80,7 @@ pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
 
     let server_api_url: Url = args.server_api_url.parse()?;
-    let zksync_client = ZksyncClient::new(&server_api_url, "yagna-node", Duration::from_secs(69));
+    let zksync_client = ZksyncClient::new(&server_api_url, "yagna-node-1", Duration::from_secs(69));
 
     let client = WebClient::with_token(&args.appkey);
     let session = rest::Session::with_client(client.clone());
@@ -97,92 +93,31 @@ pub async fn main() -> anyhow::Result<()> {
             let prover_id = zksync_client.register_prover(0).await?;
             log::info!("Registered prover under id [{}].", prover_id);
 
-            //let activity = session.create_activity(&agreement).await?;
+            let activity = session.create_activity(&agreement).await?;
             //let runner = ProverRunner::new(activity, prover_id);
 
             // TODO: run zksync in loop here
-            prove_block(zksync_client.clone()).await?;
+            prove_block(zksync_client.clone())
+                .await
+                .map_err(|e| log::error!("{}", e))
+                .ok();
+
+            log::info!("Destroying activity..");
+            activity
+                .destroy()
+                .await
+                .map_err(|e| log::error!("Can't destroy activity. Error: {}", e))
+                .ok();
 
             log::info!("Stopping prover on zksync server..");
-            zksync_client.prover_stopped(prover_id).await?;
-            //activity.destroy().await?;
+            zksync_client
+                .prover_stopped(prover_id)
+                .await
+                .map_err(|e| log::error!("Failed to unregister prover on server. Error: {}", e))
+                .ok();
 
             Ok::<_, anyhow::Error>(())
         })
         .await
         .unwrap_or_else(|| anyhow::bail!("ctrl-c caught"))
-}
-
-async fn prove_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<()> {
-    // TODO: Set block size
-    //  SUPPORTED_BLOCK_CHUNKS_SIZES=6,30,74,150,320,630
-    let block_size = 30;
-
-    // Probably we should ask for blocks of different sizes, like original prover does.
-    let (block_id, job_id) = zksync_client
-        .block_to_prove(block_size)
-        .await
-        .map_err(|e| anyhow!("Failed to download block to prove. Error: {}", e))?
-        .ok_or(anyhow!("Failed to find block of size {}", block_size))?;
-
-    log::info!(
-        "Got block '{}' of size '{}' to prove. Job id: '{}'.",
-        block_id,
-        block_size,
-        job_id
-    );
-
-    // TODO: Consider calling this function later, after yagna provider starts working on task.
-    zksync_client.working_on(job_id).await.map_err(|e| {
-        anyhow!(
-            "Working on job '{}'. Failed to notify zksync server. Error: {}",
-            job_id,
-            e
-        )
-    })?;
-
-    // TODO: Modify zksync to return ProverData here.
-    // TODO: We shouldn't download block here. Generate address and command ExeUnit to download this data.
-    let data = zksync_client
-        .prover_data(block_id)
-        .await
-        .map_err(|e| anyhow!("Couldn't get data for block '{}'. Error: {}", block_id, e))?;
-
-    // TODO: Remove donwloading in future. Provider ExeUnit will do it.
-    use std::fs::File;
-
-    let data_path = PathBuf::from("prover_data.json");
-    let file = File::open(&data_path).map_err(|e| {
-        anyhow!(
-            "Can't open data file [{}]. Error: {}",
-            data_path.display(),
-            e
-        )
-    })?;
-
-    serde_json::to_writer(file, &data)
-        .map_err(|e| anyhow!("Failed to serialize block {}. Error: {}", block_id, e))?;
-
-    log::info!("Downloaded prover data. Uploading data to Provider.");
-
-    // TODO: Run prover on provider node.
-    let verified_proof = EncodedProofPlonk::default();
-
-    log::info!("Block verified. Publishing proof on server...");
-
-    // TODO: Download proof from provider.
-    zksync_client
-        .publish(block_id, verified_proof)
-        .await
-        .map_err(|e| {
-            anyhow!(
-                "Failed to publish proof for block '{}' and job '{}'. Error: {}",
-                block_id,
-                job_id,
-                e
-            )
-        })?;
-
-    log::info!("Block '{}' published.", block_id);
-    Ok(())
 }

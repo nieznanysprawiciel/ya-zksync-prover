@@ -4,7 +4,6 @@ use std::time::{self, Duration};
 // External deps
 use anyhow::bail;
 use anyhow::format_err;
-use backoff::Operation;
 use log::*;
 use reqwest::Url;
 use std::sync::Arc;
@@ -237,7 +236,7 @@ impl ZksyncClient {
     }
 
     pub async fn register_prover(&self, block_size: usize) -> Result<i32, anyhow::Error> {
-        info!("Registering prover... Block size: {}", block_size);
+        debug!("Registering prover... Block size: {}", block_size);
         let res = self
             .http_client
             .post(self.register_url.as_str())
