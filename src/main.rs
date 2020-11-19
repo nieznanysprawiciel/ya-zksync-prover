@@ -1,4 +1,5 @@
 mod prover_runner;
+mod transfer;
 mod zksync_client;
 
 use chrono::Utc;
@@ -15,6 +16,8 @@ use yarapi::rest::{self, Activity};
 use zksync_client::ZksyncClient;
 
 use crate::prover_runner::prove_block;
+use crate::transfer::execute_commands;
+use std::sync::Arc;
 
 const PACKAGE: &str = "{TODO package}";
 
@@ -93,14 +96,26 @@ pub async fn main() -> anyhow::Result<()> {
             let prover_id = zksync_client.register_prover(0).await?;
             log::info!("Registered prover under id [{}].", prover_id);
 
-            let activity = session.create_activity(&agreement).await?;
-            //let runner = ProverRunner::new(activity, prover_id);
+            let activity = Arc::new(session.create_activity(&agreement).await?);
 
-            // TODO: run zksync in loop here
-            prove_block(zksync_client.clone())
-                .await
-                .map_err(|e| log::error!("{}", e))
-                .ok();
+            match execute_commands(
+                activity.clone(),
+                vec![
+                    rest::ExeScriptCommand::Deploy {},
+                    rest::ExeScriptCommand::Start { args: vec![] },
+                ],
+            )
+            .await
+            {
+                Ok(_) => {
+                    // TODO: run zksync in loop here
+                    prove_block(zksync_client.clone(), activity.clone())
+                        .await
+                        .map_err(|e| log::error!("{}", e))
+                        .ok();
+                }
+                Err(e) => log::error!("Failed to initialize task on yagna. Error: {}.", e),
+            };
 
             log::info!("Destroying activity..");
             activity

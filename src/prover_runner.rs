@@ -1,19 +1,27 @@
 use anyhow::{anyhow, bail};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::transfer::{execute_commands, Transfers};
 use crate::zksync_client::ZksyncClient;
 
+use yarapi::rest::activity::DefaultActivity;
+use yarapi::rest::ExeScriptCommand;
 use zksync_crypto::proof::EncodedProofPlonk;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct BlockInfo {
     pub block_id: i64,
     pub job_id: i32,
     pub block_size: usize,
 }
 
-pub async fn prove_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<()> {
+pub async fn prove_block(
+    zksync_client: Arc<ZksyncClient>,
+    activity: Arc<DefaultActivity>,
+) -> anyhow::Result<()> {
     let block = ask_for_block(zksync_client.clone()).await?;
 
     log::info!(
@@ -23,14 +31,10 @@ pub async fn prove_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<()>
         &block.job_id
     );
 
-    // TODO: Consider calling this function later, after yagna provider starts working on task.
-    zksync_client.working_on(block.job_id).await.map_err(|e| {
-        anyhow!(
-            "Working on job '{}'. Failed to notify zksync server. Error: {}",
-            block.job_id,
-            e
-        )
-    })?;
+    let transfers = Transfers::new(activity.clone());
+    transfers
+        .send_json(&PathBuf::from_str("/blocks/job-info.json")?, &block)
+        .await?;
 
     // TODO: Modify zksync to return ProverData here.
     // TODO: We shouldn't download block here. Generate address and command ExeUnit to download this data.
@@ -45,7 +49,7 @@ pub async fn prove_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<()>
             )
         })?;
 
-    // TODO: Remove donwloading in future. Provider ExeUnit will do it.
+    // TODO: Remove downloading in future. Provider ExeUnit will do it.
     use std::fs::File;
 
     let data_path = PathBuf::from("prover_data.json");
@@ -65,14 +69,31 @@ pub async fn prove_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<()>
         )
     })?;
 
-    log::info!("Downloaded prover data. Uploading data to Provider.");
+    log::info!("Downloaded prover data. Uploading data to Provider...");
+    let block_remote_path = PathBuf::from(format!("/blocks/block-{}.json", block.block_id));
+    transfers.send_json(&block_remote_path, &block).await?;
 
-    // TODO: Run prover on provider node.
-    let verified_proof = EncodedProofPlonk::default();
+    log::info!("Block uploaded. Running prover on remote yagna node...");
+    run_yagna_prover(activity.clone())
+        .await
+        .map_err(|e| anyhow!("Failed to run prover on remote node. Error: {}", e))?;
 
-    log::info!("Block verified. Publishing proof on server...");
+    // Notify server, that we are computing proof for block.
+    zksync_client.working_on(block.job_id).await.map_err(|e| {
+        anyhow!(
+            "Working on job '{}'. Failed to notify zksync server. Error: {}",
+            block.job_id,
+            e
+        )
+    })?;
 
-    // TODO: Download proof from provider.
+    log::info!("Proof for block generated. Downloading...");
+
+    let proof_path = PathBuf::from(format!("/proofs/proof-{}.json", &block.block_id));
+    let verified_proof: EncodedProofPlonk = transfers.download_json(&proof_path).await?;
+
+    log::info!("Proof downloaded. Publishing proof on server...");
+
     zksync_client
         .publish(block.block_id, verified_proof)
         .await
@@ -114,4 +135,13 @@ async fn ask_for_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<Block
         }
     }
     bail!("Checked all possible block sizes and didn't find anyone.")
+}
+
+async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> {
+    let commands = vec![ExeScriptCommand::Run {
+        entry_point: "".to_string(),
+        args: vec![],
+    }];
+
+    execute_commands(activity, commands).await
 }
