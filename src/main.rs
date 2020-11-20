@@ -19,7 +19,8 @@ use crate::prover_runner::prove_block;
 use crate::transfer::execute_commands;
 use std::sync::Arc;
 
-const PACKAGE: &str = "{TODO package}";
+const PACKAGE: &str =
+    "hash:sha3:a58da3b594eb9d0519f09d31d5b6e1576c41c22ff8b9ee4b2b04119c:http://yacn.dev.golem.network:8000/docker-ya-zksync-prover-0.1-928c7db826.gvmi";
 
 async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<rest::Agreement> {
     let deadline = Utc::now().add(chrono::Duration::minutes(15));

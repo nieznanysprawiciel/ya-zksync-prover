@@ -1,12 +1,13 @@
 use anyhow::*;
 use futures::prelude::*;
-use serde::Serialize;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-
 use futures::TryStreamExt;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::io::BufReader;
+use std::path::Path;
+use std::sync::Arc;
+use url::Url;
+
 use yarapi::rest::activity::DefaultActivity;
 use yarapi::rest::{Activity, ExeScriptCommand, RunningBatch};
 
@@ -19,9 +20,14 @@ impl Transfers {
         Transfers { activity }
     }
 
-    #[allow(dead_code)]
-    pub async fn send_file(&self, src: String, dest: &Path) -> Result<(), Error> {
-        transfer(self.activity.clone(), &PathBuf::from(src), dest).await
+    pub async fn send_file(&self, src: &Path, dest: &Path) -> Result<(), Error> {
+        let src = gftp::publish(&src).await?;
+        let mut dest = Url::from_file_path(dest)
+            .map_err(|_| anyhow!("Can't convert [{}] to url.", dest.display()))?;
+        dest.set_scheme("container")
+            .map_err(|_| anyhow!("Failed to set 'container' scheme for path [{}].", dest))?;
+
+        transfer(self.activity.clone(), &src, &dest).await
     }
 
     pub async fn send_json<T: Serialize>(
@@ -35,19 +41,25 @@ impl Transfers {
         serde_json::to_writer(file, to_serialize)
             .map_err(|e| anyhow!("Failed to serialize object to temp file. {}", e))?;
 
-        transfer(self.activity.clone(), &file_path, dest).await
+        self.send_file(&file_path, dest).await
     }
 
     #[allow(dead_code)]
     pub async fn download_file(&self, src: &Path, dest: &Path) -> Result<(), Error> {
-        transfer(self.activity.clone(), src, dest).await
+        let dest = gftp::open_for_upload(&dest).await?;
+        let mut src = Url::from_file_path(src)
+            .map_err(|_| anyhow!("Can't convert [{}] to url.", src.display()))?;
+        src.set_scheme("container")
+            .map_err(|_| anyhow!("Failed to set 'container' scheme for path [{}].", src))?;
+
+        transfer(self.activity.clone(), &src, &dest).await
     }
 
     pub async fn download_json<T: DeserializeOwned>(&self, src: &Path) -> Result<T, Error> {
         let file = tempfile::NamedTempFile::new()
             .map_err(|e| anyhow!("Failed to create temporary file. Error: {}", e))?;
 
-        transfer(self.activity.clone(), src, file.path()).await?;
+        self.download_file(src, file.path()).await?;
 
         let reader = BufReader::new(file);
         serde_json::from_reader(reader)
@@ -55,22 +67,10 @@ impl Transfers {
     }
 }
 
-async fn transfer(activity: Arc<DefaultActivity>, src: &Path, dest: &Path) -> anyhow::Result<()> {
-    let dest = dest
-        .to_path_buf()
-        .into_os_string()
-        .into_string()
-        .map_err(|e| anyhow!("Can't convert [{}] to String. {:?}", dest.display(), e))?;
-
-    let src = src
-        .to_path_buf()
-        .into_os_string()
-        .into_string()
-        .map_err(|e| anyhow!("Can't convert [{}] to String. {:?}", src.display(), e))?;
-
+async fn transfer(activity: Arc<DefaultActivity>, src: &Url, dest: &Url) -> anyhow::Result<()> {
     let commands = vec![ExeScriptCommand::Transfer {
-        from: src.clone(),
-        to: dest.clone(),
+        from: src.clone().into_string(),
+        to: dest.clone().into_string(),
         args: Default::default(),
     }];
 

@@ -25,6 +25,7 @@ chrono = "0.4.10"
 dotenv = "0.15.0"
 env_logger = "0.6"
 futures = "0.3"
+gftp = "0.1.2"
 log = "0.4"
 reqwest = { version = "0.10", features = ["blocking", "json"] }
 secp256k1 = "0.17"

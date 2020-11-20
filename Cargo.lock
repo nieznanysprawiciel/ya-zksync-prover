@@ -4294,6 +4294,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "futures 0.3.7",
+ "gftp",
  "log",
  "reqwest",
  "secp256k1",
