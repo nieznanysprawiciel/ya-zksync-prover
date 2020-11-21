@@ -1,12 +1,13 @@
 use anyhow::{anyhow, bail};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::transfer::{execute_commands, Transfers};
 use crate::zksync_client::ZksyncClient;
 
+use std::fs;
 use yarapi::rest::activity::DefaultActivity;
 use yarapi::rest::ExeScriptCommand;
 use zksync_crypto::proof::EncodedProofPlonk;
@@ -37,6 +38,15 @@ pub async fn prove_block(
         .await
         .map_err(|e| anyhow!("Transferring block info: {}", e))?;
 
+    // TODO: Save job info on disk for debugging.
+    fs::create_dir_all("blocks")?;
+    let job_file = PathBuf::from(format!("blocks/job-info-{}.json", block.job_id));
+    save(&job_file, &block).map_err(|e| anyhow!("Failed to debug job info. {}", e))?;
+
+    // This line will set last job info parameters in blocks directory. You can run docker container locally
+    // in workdir and it should work the same as on provider.
+    fs::copy(&job_file, "blocks/job-info.json").ok();
+
     // TODO: Modify zksync to return ProverData here.
     // TODO: We shouldn't download block here. Generate address and command ExeUnit to download this data.
     let data = zksync_client
@@ -50,26 +60,14 @@ pub async fn prove_block(
             )
         })?;
 
+    // TODO: Save block on disk for debugging.
+    save(
+        &PathBuf::from(format!("blocks/block-{}.json", block.block_id)),
+        &data,
+    )
+    .map_err(|e| anyhow!("Failed to debug save block. {}", e))?;
+
     // TODO: Remove downloading in future. Provider ExeUnit will do it.
-    use std::fs::File;
-
-    let data_path = PathBuf::from(&format!("block-{}.json", &block.block_id));
-    let file = File::create(&data_path).map_err(|e| {
-        anyhow!(
-            "Can't open data file [{}]. Error: {}",
-            data_path.display(),
-            e
-        )
-    })?;
-
-    serde_json::to_writer(file, &data).map_err(|e| {
-        anyhow!(
-            "Failed to serialize block {}. Error: {}",
-            &block.block_id,
-            e
-        )
-    })?;
-
     log::info!("Downloaded prover data. Uploading data to Provider...");
     let block_remote_path = PathBuf::from(format!("/blocks/block-{}.json", block.block_id));
     transfers.send_json(&block_remote_path, &block).await?;
@@ -77,6 +75,7 @@ pub async fn prove_block(
     log::info!("Block uploaded. Running prover on remote yagna node...");
     run_yagna_prover(activity.clone())
         .await
+        .map(|output| log::info!("Output from prover:\n{}", output))
         .map_err(|e| anyhow!("Failed to run prover on remote node. Error: {}", e))?;
 
     // Notify server, that we are computing proof for block.
@@ -138,11 +137,35 @@ async fn ask_for_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<Block
     bail!("Checked all possible block sizes and didn't find anyone.")
 }
 
-async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> {
+async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<String> {
     let commands = vec![ExeScriptCommand::Run {
         entry_point: "".to_string(),
         args: vec![],
     }];
 
-    execute_commands(activity, commands).await
+    execute_commands(activity, commands)
+        .await
+        .map(|output| output.join("\n"))
+}
+
+// Saving blocks for debugging.
+fn save<T: Sized + Serialize>(data_path: &Path, data: &T) -> anyhow::Result<()> {
+    use std::fs::File;
+
+    let file = File::create(&data_path).map_err(|e| {
+        anyhow!(
+            "Can't open data file [{}]. Error: {}",
+            data_path.display(),
+            e
+        )
+    })?;
+
+    serde_json::to_writer(file, &data).map_err(|e| {
+        anyhow!(
+            "Failed to serialize data to file: {}. Error: {}",
+            data_path.display(),
+            e
+        )
+    })?;
+    Ok(())
 }

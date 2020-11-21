@@ -80,8 +80,12 @@ pub async fn main() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
 
     let args = Args::from_args();
-    std::env::set_var("RUST_LOG", "info,yarapi::drop=debug");
-    env_logger::init();
+    std::env::set_var("RUST_LOG", "info");
+    env_logger::builder()
+        .filter_module("yarapi::drop", log::LevelFilter::Off)
+        .filter_module("ya_service_bus::connection", log::LevelFilter::Off)
+        .filter_module("ya_service_bus::remote_router", log::LevelFilter::Off)
+        .init();
 
     let server_api_url: Url = args.server_api_url.parse()?;
     let zksync_client = ZksyncClient::new(&server_api_url, "yagna-node-1", Duration::from_secs(69));

@@ -94,20 +94,23 @@ async fn transfer(activity: Arc<DefaultActivity>, src: &Url, dest: &Url) -> anyh
 pub async fn execute_commands(
     activity: Arc<DefaultActivity>,
     commands: Vec<ExeScriptCommand>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Vec<String>> {
     let batch = activity.exec(commands).await?;
     batch
         .events()
-        .try_for_each(|event| {
-            log::info!("Event: {:?}", event);
+        .and_then(|event| {
+            log::debug!("Event: {:?}", event);
             match event {
-                Event::StepFailed { message } => future::err(anyhow!("Step failed: {}", message)),
+                Event::StepFailed { message } => {
+                    future::err::<String, anyhow::Error>(anyhow!("Step failed: {}", message))
+                }
                 Event::StepSuccess { command, output } => {
-                    log::info!("Command [{:?}] finished.", command);
-                    log::info!("Command result:\n {}", output);
-                    future::ok(())
+                    log::debug!("Command [{:?}] finished.", command);
+                    log::debug!("Command result:\n {}", output);
+                    future::ok(output)
                 }
             }
         })
+        .try_collect()
         .await
 }
