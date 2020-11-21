@@ -34,7 +34,8 @@ pub async fn prove_block(
     let transfers = Transfers::new(activity.clone());
     transfers
         .send_json(&PathBuf::from_str("/blocks/job-info.json")?, &block)
-        .await?;
+        .await
+        .map_err(|e| anyhow!("Transferring block info: {}", e))?;
 
     // TODO: Modify zksync to return ProverData here.
     // TODO: We shouldn't download block here. Generate address and command ExeUnit to download this data.
@@ -52,7 +53,7 @@ pub async fn prove_block(
     // TODO: Remove downloading in future. Provider ExeUnit will do it.
     use std::fs::File;
 
-    let data_path = PathBuf::from("prover_data.json");
+    let data_path = PathBuf::from(&format!("block-{}.json", &block.block_id));
     let file = File::create(&data_path).map_err(|e| {
         anyhow!(
             "Can't open data file [{}]. Error: {}",

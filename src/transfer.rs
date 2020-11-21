@@ -8,7 +8,7 @@ use std::path::Path;
 use std::sync::Arc;
 use url::Url;
 
-use yarapi::rest::activity::DefaultActivity;
+use yarapi::rest::activity::{DefaultActivity, Event};
 use yarapi::rest::{Activity, ExeScriptCommand, RunningBatch};
 
 pub struct Transfers {
@@ -21,11 +21,12 @@ impl Transfers {
     }
 
     pub async fn send_file(&self, src: &Path, dest: &Path) -> Result<(), Error> {
-        let src = gftp::publish(&src).await?;
-        let mut dest = Url::from_file_path(dest)
-            .map_err(|_| anyhow!("Can't convert [{}] to url.", dest.display()))?;
-        dest.set_scheme("container")
-            .map_err(|_| anyhow!("Failed to set 'container' scheme for path [{}].", dest))?;
+        let src = gftp::publish(&src)
+            .await
+            .map_err(|e| anyhow!("gftp: {}", e))?;
+        let dest = format!("container:{}", dest.display());
+        let dest =
+            Url::parse(&dest).map_err(|e| anyhow!("Can't convert [{}] to url. {}", dest, e))?;
 
         transfer(self.activity.clone(), &src, &dest).await
     }
@@ -35,31 +36,34 @@ impl Transfers {
         dest: &Path,
         to_serialize: &T,
     ) -> Result<(), Error> {
-        let file = tempfile::NamedTempFile::new()
-            .map_err(|e| anyhow!("Failed to create temporary file. Error: {}", e))?;
-        let file_path = file.path().to_path_buf();
+        let (file, file_path) = tempfile::NamedTempFile::new()
+            .map_err(|e| anyhow!("Failed to create temporary file. Error: {}", e))?
+            .keep()
+            .map_err(|e| anyhow!("Can't persist temporary file. Error: {}", e))?;
+
         serde_json::to_writer(file, to_serialize)
             .map_err(|e| anyhow!("Failed to serialize object to temp file. {}", e))?;
 
-        self.send_file(&file_path, dest).await
+        self.send_file(&file_path, dest)
+            .await
+            .map_err(|e| anyhow!("Error while sending json to: [{}]. {}", dest.display(), e))
     }
 
-    #[allow(dead_code)]
     pub async fn download_file(&self, src: &Path, dest: &Path) -> Result<(), Error> {
         let dest = gftp::open_for_upload(&dest).await?;
-        let mut src = Url::from_file_path(src)
-            .map_err(|_| anyhow!("Can't convert [{}] to url.", src.display()))?;
-        src.set_scheme("container")
-            .map_err(|_| anyhow!("Failed to set 'container' scheme for path [{}].", src))?;
+        let src = format!("container:{}", src.display());
+        let src = Url::parse(&src).map_err(|e| anyhow!("Can't convert [{}] to url. {}", src, e))?;
 
         transfer(self.activity.clone(), &src, &dest).await
     }
 
     pub async fn download_json<T: DeserializeOwned>(&self, src: &Path) -> Result<T, Error> {
-        let file = tempfile::NamedTempFile::new()
-            .map_err(|e| anyhow!("Failed to create temporary file. Error: {}", e))?;
+        let (file, file_path) = tempfile::NamedTempFile::new()
+            .map_err(|e| anyhow!("Failed to create temporary file. Error: {}", e))?
+            .keep()
+            .map_err(|e| anyhow!("Can't persist temporary file. Error: {}", e))?;
 
-        self.download_file(src, file.path()).await?;
+        self.download_file(src, &file_path).await?;
 
         let reader = BufReader::new(file);
         serde_json::from_reader(reader)
@@ -95,8 +99,15 @@ pub async fn execute_commands(
     batch
         .events()
         .try_for_each(|event| {
-            log::info!("event: {:?}", event);
-            future::ok(())
+            log::info!("Event: {:?}", event);
+            match event {
+                Event::StepFailed { message } => future::err(anyhow!("Step failed: {}", message)),
+                Event::StepSuccess { command, output } => {
+                    log::info!("Command [{:?}] finished.", command);
+                    log::info!("Command result:\n {}", output);
+                    future::ok(())
+                }
+            }
         })
         .await
 }
