@@ -4316,6 +4316,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "yagna-prover"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "backoff",
+ "env_logger",
+ "log",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "structopt",
+ "zksync_circuit",
+ "zksync_config",
+ "zksync_crypto",
+ "zksync_prover",
+ "zksync_prover_utils",
+ "zksync_state",
+ "zksync_types",
+ "zksync_utils",
+]
+
+[[package]]
 name = "yaml-rust"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
