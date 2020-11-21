@@ -45,7 +45,7 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
     futures::pin_mut!(proposals);
     while let Some(proposal) = proposals.try_next().await? {
         log::info!(
-            "Got proposal: {} -- from: {}, draft: {:?}",
+            "Got proposal: {} -- from: {}, state: {:?}",
             proposal.id(),
             proposal.issuer_id(),
             proposal.state()
@@ -93,17 +93,17 @@ pub async fn main() -> anyhow::Result<()> {
     let client = WebClient::with_token(&args.appkey);
     let session = rest::Session::with_client(client.clone());
 
+    let agreement = create_agreement(session.market()?, &args.subnet).await?;
+
+    log::info!("Registering prover..");
+    let prover_id = zksync_client.register_prover(0).await?;
+    log::info!("Registered prover under id [{}].", prover_id);
+
+    let activity = Arc::new(session.create_activity(&agreement).await?);
+
     session
         .with(async {
-            let agreement = create_agreement(session.market()?, &args.subnet).await?;
-
-            log::info!("Registering prover..");
-            let prover_id = zksync_client.register_prover(0).await?;
-            log::info!("Registered prover under id [{}].", prover_id);
-
-            let activity = Arc::new(session.create_activity(&agreement).await?);
-
-            match execute_commands(
+            if let Err(e) = execute_commands(
                 activity.clone(),
                 vec![
                     rest::ExeScriptCommand::Deploy {},
@@ -112,32 +112,37 @@ pub async fn main() -> anyhow::Result<()> {
             )
             .await
             {
-                Ok(_) => {
-                    // TODO: run zksync in loop here
-                    prove_block(zksync_client.clone(), activity.clone())
-                        .await
-                        .map_err(|e| log::error!("{}", e))
-                        .ok();
-                }
-                Err(e) => log::error!("Failed to initialize task on yagna. Error: {}.", e),
+                log::error!("Failed to initialize yagna task. Error: {}.", e);
+                return Ok(());
             };
 
-            log::info!("Destroying activity..");
-            activity
-                .destroy()
-                .await
-                .map_err(|e| log::error!("Can't destroy activity. Error: {}", e))
-                .ok();
+            log::info!("Image deployed. ExeUnit started.");
 
-            log::info!("Stopping prover on zksync server..");
-            zksync_client
-                .prover_stopped(prover_id)
+            // TODO: run zksync in loop here
+            prove_block(zksync_client.clone(), activity.clone())
                 .await
-                .map_err(|e| log::error!("Failed to unregister prover on server. Error: {}", e))
+                .map_err(|e| log::error!("{}", e))
                 .ok();
-
-            Ok::<_, anyhow::Error>(())
+            Ok::<(), anyhow::Error>(())
         })
         .await
         .unwrap_or_else(|| anyhow::bail!("ctrl-c caught"))
+        .map_err(|e| log::info!("{}", e))
+        .ok();
+
+    log::info!("Destroying activity..");
+    activity
+        .destroy()
+        .await
+        .map_err(|e| log::error!("Can't destroy activity. Error: {}", e))
+        .ok();
+
+    log::info!("Stopping prover on zksync server..");
+    zksync_client
+        .prover_stopped(prover_id)
+        .await
+        .map_err(|e| log::error!("Failed to unregister prover on server. Error: {}", e))
+        .ok();
+
+    Ok(())
 }

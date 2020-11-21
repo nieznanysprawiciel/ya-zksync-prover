@@ -139,8 +139,8 @@ async fn ask_for_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<Block
 
 async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<String> {
     let commands = vec![ExeScriptCommand::Run {
-        entry_point: "".to_string(),
-        args: vec![],
+        entry_point: "/bin/yagna-prover".to_string(),
+        args: vec!["ya-prover".to_string()],
     }];
 
     execute_commands(activity, commands)
