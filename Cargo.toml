@@ -12,10 +12,12 @@ members = [
 ]
 
 [dependencies]
-ya-client = { version = "0.4" }
+ya-client = { git = "https://github.com/golemfactory/ya-client.git", rev = "cf9838499aaeb2a54c4ad56d1601c4579a66e7cc"}
+ya-client-model = { git = "https://github.com/golemfactory/ya-client.git", rev = "cf9838499aaeb2a54c4ad56d1601c4579a66e7cc"}
 ya-agreement-utils = "0.1"
 
-yarapi = { git = "https://github.com/golemfactory/yarapi" }
+yarapi = { git = "https://github.com/golemfactory/yarapi", branch = "event-api-compatibility" }
+
 zksync = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }
 zksync_prover = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }
 zksync_crypto = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }

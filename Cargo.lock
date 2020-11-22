@@ -4166,20 +4166,20 @@ dependencies = [
 [[package]]
 name = "ya-client"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4343e8d8b3bb20f2b0754c2cfc8c68e6466bd843094e54724e49f6cb8c570d6b"
+source = "git+https://github.com/golemfactory/ya-client.git?rev=cf9838499aaeb2a54c4ad56d1601c4579a66e7cc#cf9838499aaeb2a54c4ad56d1601c4579a66e7cc"
 dependencies = [
  "awc",
- "backtrace",
  "bytes 0.5.6",
  "chrono",
  "envy",
  "failure",
  "futures 0.3.7",
  "graphene-sgx",
+ "heck",
  "hex",
  "lazy_static",
  "log",
+ "mime",
  "openssl",
  "rand 0.6.5",
  "secp256k1",
@@ -4206,8 +4206,7 @@ dependencies = [
 [[package]]
 name = "ya-client-model"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d7b5a9fc91eaff99c4f199d5bfae24d9bec8cc34a18f3a4bf8eb575ab44f77e"
+source = "git+https://github.com/golemfactory/ya-client.git?rev=cf9838499aaeb2a54c4ad56d1601c4579a66e7cc#cf9838499aaeb2a54c4ad56d1601c4579a66e7cc"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -4308,6 +4307,7 @@ dependencies = [
  "url",
  "ya-agreement-utils",
  "ya-client",
+ "ya-client-model 0.2.0",
  "yarapi",
  "zksync",
  "zksync_crypto",
@@ -4349,7 +4349,7 @@ dependencies = [
 [[package]]
 name = "yarapi"
 version = "0.3.0"
-source = "git+https://github.com/golemfactory/yarapi#f0fdafe4ceba0a676de7969bc1360b4179cb39b9"
+source = "git+https://github.com/golemfactory/yarapi?branch=event-api-compatibility#4d926d723022ce08be3421a7a3dca5fa285c2c9a"
 dependencies = [
  "actix",
  "actix-rt",

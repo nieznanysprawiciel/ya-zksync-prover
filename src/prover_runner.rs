@@ -1,14 +1,17 @@
 use anyhow::{anyhow, bail};
+use futures::future::ready;
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::transfer::{execute_commands, Transfers};
+use crate::transfer::Transfers;
 use crate::zksync_client::ZksyncClient;
-
-use std::fs;
+use ya_client_model::activity::{Capture, CaptureFormat, CaptureMode, RuntimeEventKind};
 use yarapi::rest::activity::DefaultActivity;
+use yarapi::rest::streaming::StreamingActivity;
 use yarapi::rest::ExeScriptCommand;
 use zksync_crypto::proof::EncodedProofPlonk;
 
@@ -70,12 +73,11 @@ pub async fn prove_block(
     // TODO: Remove downloading in future. Provider ExeUnit will do it.
     log::info!("Downloaded prover data. Uploading data to Provider...");
     let block_remote_path = PathBuf::from(format!("/blocks/block-{}.json", block.block_id));
-    transfers.send_json(&block_remote_path, &block).await?;
+    transfers.send_json(&block_remote_path, &data).await?;
 
     log::info!("Block uploaded. Running prover on remote yagna node...");
     run_yagna_prover(activity.clone())
         .await
-        .map(|output| log::info!("Output from prover:\n{}", output))
         .map_err(|e| anyhow!("Failed to run prover on remote node. Error: {}", e))?;
 
     // Notify server, that we are computing proof for block.
@@ -137,15 +139,49 @@ async fn ask_for_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<Block
     bail!("Checked all possible block sizes and didn't find anyone.")
 }
 
-async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<String> {
+async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> {
+    let capture = Some(CaptureMode::Stream {
+        limit: None,
+        format: Some(CaptureFormat::Str),
+    });
+
     let commands = vec![ExeScriptCommand::Run {
         entry_point: "/bin/yagna-prover".to_string(),
         args: vec!["ya-prover".to_string()],
+        capture: Some(Capture {
+            stdout: capture.clone(),
+            stderr: capture,
+        }),
     }];
 
-    execute_commands(activity, commands)
-        .await
-        .map(|output| output.join("\n"))
+    activity
+        .exec_streaming(commands)
+        .await?
+        .forward_to_file(
+            &PathBuf::from("stdout-output.txt"),
+            &PathBuf::from("stderr-output.txt"),
+        )
+        .await?
+        .take_while(|event| {
+            ready(match &event.kind {
+                RuntimeEventKind::Finished {
+                    return_code,
+                    message,
+                } => {
+                    let no_msg = "".to_string();
+                    log::info!(
+                        "ExeUnit finished proving with code {}, and message: {}",
+                        return_code,
+                        message.as_ref().unwrap_or(&no_msg)
+                    );
+                    false
+                }
+                _ => true,
+            })
+        })
+        .for_each(|_| ready(()))
+        .await;
+    Ok(())
 }
 
 // Saving blocks for debugging.
