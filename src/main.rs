@@ -120,12 +120,15 @@ pub async fn main() -> anyhow::Result<()> {
 
             log::info!("Image deployed. ExeUnit started.");
 
-            // TODO: run zksync in loop here
-            prove_block(zksync_client.clone(), activity.clone())
-                .await
-                .map_err(|e| log::error!("{}", e))
-                .ok();
-            Ok::<(), anyhow::Error>(())
+            loop {
+                match prove_block(zksync_client.clone(), activity.clone())
+                    .await
+                    .map_err(|e| log::error!("{}", e))
+                {
+                    Err(_) => tokio::time::delay_for(Duration::from_secs(10)).await,
+                    Ok(()) => (),
+                }
+            }
         })
         .await
         .unwrap_or_else(|| anyhow::bail!("ctrl-c caught"))

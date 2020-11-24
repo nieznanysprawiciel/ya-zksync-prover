@@ -130,13 +130,13 @@ async fn ask_for_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<Block
                 job_id,
             });
         } else {
-            log::info!(
+            log::debug!(
                 "Block of size {} not found. Checking other possible sizes",
                 block_size
             );
         }
     }
-    bail!("Checked all possible block sizes and didn't find anyone.")
+    bail!("Checked all possible block sizes and didn't find any.")
 }
 
 async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> {
