@@ -1,6 +1,7 @@
 use anyhow::{anyhow, bail};
 use futures::future::ready;
 use futures::StreamExt;
+use indicatif::ProgressBar;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,7 +10,9 @@ use std::sync::Arc;
 
 use crate::transfer::Transfers;
 use crate::zksync_client::ZksyncClient;
-use ya_client_model::activity::{Capture, CaptureFormat, CaptureMode, RuntimeEventKind};
+use ya_client_model::activity::{
+    Capture, CaptureFormat, CaptureMode, CommandOutput, RuntimeEventKind,
+};
 use yarapi::rest::activity::DefaultActivity;
 use yarapi::rest::streaming::StreamingActivity;
 use yarapi::rest::ExeScriptCommand;
@@ -154,6 +157,9 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
         }),
     }];
 
+    let bar_max: u64 = 24720;
+    let bar = ProgressBar::new(bar_max);
+
     activity
         .exec_streaming(commands)
         .await?
@@ -162,6 +168,13 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
             &PathBuf::from("stderr-output.txt"),
         )
         .await?
+        .inspect(|event| match &event.kind {
+            RuntimeEventKind::StdOut(output) => bar.inc(match output {
+                CommandOutput::Str(text) => text.len(),
+                CommandOutput::Bin(vec) => vec.len(),
+            } as u64),
+            _ => (),
+        })
         .take_while(|event| {
             ready(match &event.kind {
                 RuntimeEventKind::Finished {
@@ -181,6 +194,9 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
         })
         .for_each(|_| ready(()))
         .await;
+
+    bar.set_position(bar_max);
+    bar.finish_and_clear();
     Ok(())
 }
 
