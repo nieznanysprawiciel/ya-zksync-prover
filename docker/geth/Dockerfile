@@ -1,2 +1,2 @@
 FROM matterlabs/geth
-COPY standard-dev.json /seed/
+COPY docker/geth/standard-dev.json /seed/

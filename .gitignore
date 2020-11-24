@@ -2,3 +2,6 @@
 
 /target
 workdir
+volumes
+
+.env

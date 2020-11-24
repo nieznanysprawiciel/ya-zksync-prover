@@ -1,3 +1,3 @@
-target
-workdir
-src
+*
+!docker/*
+!yagna-prover/*
