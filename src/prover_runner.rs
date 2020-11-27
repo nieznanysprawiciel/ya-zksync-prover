@@ -14,7 +14,7 @@ use ya_client_model::activity::{
     Capture, CaptureFormat, CaptureMode, CommandOutput, RuntimeEventKind,
 };
 use yarapi::rest::activity::DefaultActivity;
-use yarapi::rest::streaming::StreamingActivity;
+use yarapi::rest::streaming::{ResultStream, StreamingActivity};
 use yarapi::rest::ExeScriptCommand;
 use zksync_crypto::proof::EncodedProofPlonk;
 
@@ -163,11 +163,12 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
     activity
         .exec_streaming(commands)
         .await?
+        .stream()
+        .await?
         .forward_to_file(
             &PathBuf::from("stdout-output.txt"),
             &PathBuf::from("stderr-output.txt"),
-        )
-        .await?
+        )?
         .inspect(|event| match &event.kind {
             RuntimeEventKind::StdOut(output) => bar.inc(match output {
                 CommandOutput::Str(text) => text.len(),

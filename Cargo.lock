@@ -1369,9 +1369,9 @@ dependencies = [
 
 [[package]]
 name = "futures-core"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18eaa56102984bed2c88ea39026cff3ce3b4c7f508ca970cedf2450ea10d4e46"
+checksum = "847ce131b72ffb13b6109a221da9ad97a64cbe48feb1028356b836b47b8f1748"
 
 [[package]]
 name = "futures-executor"
@@ -1453,7 +1453,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr",
- "pin-project 1.0.1",
+ "pin-project 1.0.2",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -1726,7 +1726,7 @@ dependencies = [
  "httparse",
  "httpdate",
  "itoa",
- "pin-project 1.0.1",
+ "pin-project 1.0.2",
  "socket2",
  "tokio 0.2.22",
  "tower-service",
@@ -2453,11 +2453,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee41d838744f60d959d7074e3afb6b35c7456d0f61cad38a24e35e6553f73841"
+checksum = "9ccc2237c2c489783abd8c4c80e5450fc0e98644555b1364da68cc29aa151ca7"
 dependencies = [
- "pin-project-internal 1.0.1",
+ "pin-project-internal 1.0.2",
 ]
 
 [[package]]
@@ -2473,9 +2473,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-internal"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81a4ffa594b66bff340084d4081df649a7dc049ac8d7fc458d8e628bfbbb2f86"
+checksum = "f8e8d2bf0b23038a4424865103a4df472855692821aab4e4f5c3312d461d9e5f"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
@@ -4400,7 +4400,7 @@ dependencies = [
 [[package]]
 name = "yarapi"
 version = "0.3.0"
-source = "git+https://github.com/golemfactory/yarapi?branch=event-api-compatibility#4d926d723022ce08be3421a7a3dca5fa285c2c9a"
+source = "git+https://github.com/golemfactory/yarapi?branch=event-api-compatibility#65636ad48c02308b40ccc1955313dfc343f22cc2"
 dependencies = [
  "actix",
  "actix-rt",
@@ -4410,8 +4410,11 @@ dependencies = [
  "dotenv",
  "env_logger",
  "futures 0.3.7",
+ "futures-core",
+ "futures-util",
  "gftp",
  "log",
+ "pin-project 1.0.2",
  "secp256k1",
  "semver 0.10.0",
  "serde_json",
