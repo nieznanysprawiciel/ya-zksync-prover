@@ -2,6 +2,7 @@ mod prover_runner;
 mod transfer;
 mod zksync_client;
 
+use anyhow::anyhow;
 use chrono::Utc;
 use futures::prelude::*;
 use std::ops::Add;
@@ -10,10 +11,10 @@ use std::time::Duration;
 use structopt::StructOpt;
 use url::Url;
 
-use ya_agreement_utils::{constraints, ConstraintKey, Constraints};
 use ya_client::web::WebClient;
 use yarapi::requestor::Image;
 use yarapi::rest::{self, Activity};
+use yarapi::ya_agreement_utils::{constraints, ConstraintKey, Constraints};
 use zksync_client::ZksyncClient;
 
 use crate::prover_runner::prove_block;
@@ -52,22 +53,34 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
         );
         if proposal.is_response() {
             let agreement = proposal.create_agreement(deadline).await?;
-            log::info!("Created agreement {}", agreement.id());
             if let Err(e) = agreement.confirm().await {
                 log::error!("wait_for_approval failed: {:?}", e);
                 continue;
             }
+
+            // TODO: Use AgreementView.
+            let name = agreement
+                .content()
+                .await?
+                .offer
+                .properties
+                .pointer("/golem.node.id.name")
+                .map(|value| value.as_str().map(|name| name.to_string()))
+                .flatten()
+                .ok_or(anyhow!("Can't find node name in Agreement"))?;
+
+            log::info!("Created agreement [{}] with '{}'", agreement.id(), name);
             return Ok(agreement);
         }
         let id = proposal.counter_proposal(&props, &constraints).await?;
-        log::info!("Got: {}", id);
+        log::debug!("Got: {}", id);
     }
     unimplemented!()
 }
 
 #[derive(StructOpt)]
 struct Args {
-    #[structopt(long, env, default_value = "devnet-alpha.2")]
+    #[structopt(long, env, default_value = "devnet-alpha.3")]
     subnet: String,
     #[structopt(long, env = "YAGNA_APPKEY")]
     appkey: String,
@@ -105,6 +118,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     session
         .with(async {
+            log::info!("Deploying image and starting ExeUnit...");
             if let Err(e) = execute_commands(
                 activity.clone(),
                 vec![

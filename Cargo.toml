@@ -12,9 +12,11 @@ members = [
 ]
 
 [dependencies]
-ya-client = { git = "https://github.com/golemfactory/ya-client.git", rev = "cf9838499aaeb2a54c4ad56d1601c4579a66e7cc"}
-ya-client-model = { git = "https://github.com/golemfactory/ya-client.git", rev = "cf9838499aaeb2a54c4ad56d1601c4579a66e7cc"}
-ya-agreement-utils = "0.1"
+ya-client = { git = "https://github.com/golemfactory/ya-client.git", rev = "50c530fb54fbb91a9ad743f43f2c6e0b3fc3b34f"}
+ya-client-model = { git = "https://github.com/golemfactory/ya-client.git", rev = "50c530fb54fbb91a9ad743f43f2c6e0b3fc3b34f"}
+ya-agreement-utils = { git = "https://github.com/golemfactory/yagna.git", rev = "75e8e3cc28c8dfeb4b1e319e36c2134a23367c19" }
+gftp = { git = "https://github.com/golemfactory/yagna.git", rev = "75e8e3cc28c8dfeb4b1e319e36c2134a23367c19" }
+#gftp = "0.1.2"
 
 yarapi = { git = "https://github.com/golemfactory/yarapi", branch = "event-api-compatibility" }
 
@@ -32,7 +34,6 @@ chrono = "0.4.10"
 dotenv = "0.15.0"
 env_logger = "0.6"
 futures = "0.3"
-gftp = "0.1.2"
 indicatif = "0.15.0"
 log = "0.4"
 reqwest = { version = "0.10", features = ["blocking", "json"] }
