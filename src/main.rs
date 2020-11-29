@@ -21,7 +21,7 @@ use crate::prover_runner::prove_block;
 use crate::transfer::execute_commands;
 
 const PACKAGE: &str =
-    "hash:sha3:a58da3b594eb9d0519f09d31d5b6e1576c41c22ff8b9ee4b2b04119c:http://yacn.dev.golem.network:8000/docker-ya-zksync-prover-0.1-928c7db826.gvmi";
+    "hash:sha3:0bf9efb4822c5cfd5606e62698e1edac1951f1973d0d944ca1ad5f07:http://yacn.dev.golem.network:8000/ya-zksync-prover-0.2";
 
 async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<rest::Agreement> {
     let deadline = Utc::now().add(chrono::Duration::minutes(25));
@@ -34,7 +34,7 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
     });
 
     let constraints = constraints![
-        "golem.runtime.name" == Image::GVMKit((0, 1, 0).into()).runtime_name(),
+        "golem.runtime.name" == Image::GVMKit((0, 2, 3).into()).runtime_name(),
         "golem.node.debug.subnet" == subnet
     ]
     .to_string();
@@ -72,8 +72,11 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
             log::info!("Created agreement [{}] with '{}'", agreement.id(), name);
             return Ok(agreement);
         }
-        let id = proposal.counter_proposal(&props, &constraints).await?;
-        log::debug!("Got: {}", id);
+        proposal
+            .counter_proposal(&props, &constraints)
+            .await
+            .map_err(|e| log::warn!("Failed to counter Proposal. Error: {}", e))
+            .ok();
     }
     unimplemented!()
 }
