@@ -15,7 +15,7 @@ use ya_client_model::activity::{
 };
 use yarapi::rest::activity::DefaultActivity;
 use yarapi::rest::streaming::{ResultStream, StreamingActivity};
-use yarapi::rest::ExeScriptCommand;
+use yarapi::rest::{Activity, ExeScriptCommand, RunningBatch};
 use zksync_crypto::proof::EncodedProofPlonk;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -55,28 +55,33 @@ pub async fn prove_block(
 
     // TODO: Modify zksync to return ProverData here.
     // TODO: We shouldn't download block here. Generate address and command ExeUnit to download this data.
-    let data = zksync_client
-        .prover_data(block.block_id)
-        .await
-        .map_err(|e| {
-            anyhow!(
-                "Couldn't get data for block '{}'. Error: {}",
-                &block.block_id,
-                e
-            )
-        })?;
+    // let data = zksync_client
+    //     .prover_data(block.block_id)
+    //     .await
+    //     .map_err(|e| {
+    //         anyhow!(
+    //             "Couldn't get data for block '{}'. Error: {}",
+    //             &block.block_id,
+    //             e
+    //         )
+    //     })?;
 
     // TODO: Save block on disk for debugging.
-    save(
-        &PathBuf::from(format!("blocks/block-{}.json", block.block_id)),
-        &data,
-    )
-    .map_err(|e| anyhow!("Failed to debug save block. {}", e))?;
+    // save(
+    //     &PathBuf::from(format!("blocks/block-{}.json", block.block_id)),
+    //     &data,
+    // )
+    // .map_err(|e| anyhow!("Failed to debug save block. {}", e))?;
 
     // TODO: Remove downloading in future. Provider ExeUnit will do it.
     log::info!("Downloaded prover data. Uploading data to Provider...");
     let block_remote_path = PathBuf::from(format!("/blocks/block-{}.json", block.block_id));
-    transfers.send_json(&block_remote_path, &data).await?;
+    transfers
+        .send_file(
+            &PathBuf::from(format!("blocks/block-{}.json", block.block_id)),
+            &block_remote_path,
+        )
+        .await?;
 
     log::info!("Block uploaded. Running prover on remote yagna node...");
     run_yagna_prover(activity.clone())
@@ -84,13 +89,13 @@ pub async fn prove_block(
         .map_err(|e| anyhow!("Failed to run prover on remote node. Error: {}", e))?;
 
     // Notify server, that we are computing proof for block.
-    zksync_client.working_on(block.job_id).await.map_err(|e| {
-        anyhow!(
-            "Working on job '{}'. Failed to notify zksync server. Error: {}",
-            block.job_id,
-            e
-        )
-    })?;
+    // zksync_client.working_on(block.job_id).await.map_err(|e| {
+    //     anyhow!(
+    //         "Working on job '{}'. Failed to notify zksync server. Error: {}",
+    //         block.job_id,
+    //         e
+    //     )
+    // })?;
 
     log::info!("Proof for block generated. Downloading...");
 
@@ -99,47 +104,52 @@ pub async fn prove_block(
 
     log::info!("Proof downloaded. Publishing proof on server...");
 
-    zksync_client
-        .publish(block.block_id, verified_proof)
-        .await
-        .map_err(|e| {
-            anyhow!(
-                "Failed to publish proof for block '{}' and job '{}'. Error: {}",
-                block.block_id,
-                block.job_id,
-                e
-            )
-        })?;
+    // zksync_client
+    //     .publish(block.block_id, verified_proof)
+    //     .await
+    //     .map_err(|e| {
+    //         anyhow!(
+    //             "Failed to publish proof for block '{}' and job '{}'. Error: {}",
+    //             block.block_id,
+    //             block.job_id,
+    //             e
+    //         )
+    //     })?;
 
     log::info!("Block '{}' published.", block.block_id);
     Ok(())
 }
 
 async fn ask_for_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<BlockInfo> {
-    // TODO: Make configurable
-    let supported_sizes: Vec<usize> = vec![6, 30, 74, 150, 320, 630];
-
-    // Try ask server for different sizes of blocks.
-    for block_size in supported_sizes.iter().cloned() {
-        let info = zksync_client
-            .block_to_prove(block_size)
-            .await
-            .map_err(|e| anyhow!("Failed to download block to prove. Error: {}", e))?;
-
-        if let Some((block_id, job_id)) = info {
-            return Ok(BlockInfo {
-                block_id,
-                block_size,
-                job_id,
-            });
-        } else {
-            log::debug!(
-                "Block of size {} not found. Checking other possible sizes",
-                block_size
-            );
-        }
-    }
-    bail!("Checked all possible block sizes and didn't find any.")
+    // // TODO: Make configurable
+    // let supported_sizes: Vec<usize> = vec![6, 30, 74, 150, 320, 630];
+    //
+    // // Try ask server for different sizes of blocks.
+    // for block_size in supported_sizes.iter().cloned() {
+    //     let info = zksync_client
+    //         .block_to_prove(block_size)
+    //         .await
+    //         .map_err(|e| anyhow!("Failed to download block to prove. Error: {}", e))?;
+    //
+    //     if let Some((block_id, job_id)) = info {
+    //         return Ok(BlockInfo {
+    //             block_id,
+    //             block_size,
+    //             job_id,
+    //         });
+    //     } else {
+    //         log::debug!(
+    //             "Block of size {} not found. Checking other possible sizes",
+    //             block_size
+    //         );
+    //     }
+    // }
+    // bail!("Checked all possible block sizes and didn't find any.")
+    Ok(BlockInfo {
+        block_id: 29,
+        block_size: 6,
+        job_id: 97,
+    })
 }
 
 async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> {
@@ -157,47 +167,59 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
         }),
     }];
 
-    let bar_max: u64 = 24720;
-    let bar = ProgressBar::new(bar_max);
+    use futures::{future, TryStreamExt};
 
     activity
-        .exec_streaming(commands)
+        .exec(commands)
         .await?
-        .stream()
-        .await?
-        .forward_to_file(
-            &PathBuf::from("stdout-output.txt"),
-            &PathBuf::from("stderr-output.txt"),
-        )?
-        .inspect(|event| match &event.kind {
-            RuntimeEventKind::StdOut(output) => bar.inc(match output {
-                CommandOutput::Str(text) => text.len(),
-                CommandOutput::Bin(vec) => vec.len(),
-            } as u64),
-            _ => (),
+        .events()
+        .try_for_each(|event| {
+            log::info!("event: {:?}", event);
+            future::ok(())
         })
-        .take_while(|event| {
-            ready(match &event.kind {
-                RuntimeEventKind::Finished {
-                    return_code,
-                    message,
-                } => {
-                    let no_msg = "".to_string();
-                    log::info!(
-                        "ExeUnit finished proving with code {}, and message: {}",
-                        return_code,
-                        message.as_ref().unwrap_or(&no_msg)
-                    );
-                    false
-                }
-                _ => true,
-            })
-        })
-        .for_each(|_| ready(()))
-        .await;
-
-    bar.set_position(bar_max);
-    bar.finish_and_clear();
+        .await?;
+    //
+    // let bar_max: u64 = 24720;
+    // let bar = ProgressBar::new(bar_max);
+    //
+    // activity
+    //     .exec_streaming(commands)
+    //     .await?
+    //     .stream()
+    //     .await?
+    //     .forward_to_file(
+    //         &PathBuf::from("stdout-output.txt"),
+    //         &PathBuf::from("stderr-output.txt"),
+    //     )?
+    //     .inspect(|event| match &event.kind {
+    //         RuntimeEventKind::StdOut(output) => bar.inc(match output {
+    //             CommandOutput::Str(text) => text.len(),
+    //             CommandOutput::Bin(vec) => vec.len(),
+    //         } as u64),
+    //         _ => (),
+    //     })
+    //     .take_while(|event| {
+    //         ready(match &event.kind {
+    //             RuntimeEventKind::Finished {
+    //                 return_code,
+    //                 message,
+    //             } => {
+    //                 let no_msg = "".to_string();
+    //                 log::info!(
+    //                     "ExeUnit finished proving with code {}, and message: {}",
+    //                     return_code,
+    //                     message.as_ref().unwrap_or(&no_msg)
+    //                 );
+    //                 false
+    //             }
+    //             _ => true,
+    //         })
+    //     })
+    //     .for_each(|_| ready(()))
+    //     .await;
+    //
+    // bar.set_position(bar_max);
+    // bar.finish_and_clear();
     Ok(())
 }
 

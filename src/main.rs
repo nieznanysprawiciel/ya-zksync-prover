@@ -83,11 +83,11 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
 
 #[derive(StructOpt)]
 struct Args {
-    #[structopt(long, env, default_value = "devnet-alpha.3")]
+    #[structopt(long, env, default_value = "community.3")]
     subnet: String,
     #[structopt(long, env = "YAGNA_APPKEY")]
     appkey: String,
-    #[structopt(long, env)]
+    #[structopt(long, env, default_value = "http://127.0.0.1:8088")]
     server_api_url: String,
 }
 
@@ -114,7 +114,8 @@ pub async fn main() -> anyhow::Result<()> {
     let agreement = create_agreement(session.market()?, &args.subnet).await?;
 
     log::info!("Registering prover..");
-    let prover_id = zksync_client.register_prover(0).await?;
+    //let prover_id = zksync_client.register_prover(0).await?;
+    let prover_id = 3;
     log::info!("Registered prover under id [{}].", prover_id);
 
     let activity = Arc::new(session.create_activity(&agreement).await?);
@@ -160,11 +161,11 @@ pub async fn main() -> anyhow::Result<()> {
         .ok();
 
     log::info!("Stopping prover on zksync server..");
-    zksync_client
-        .prover_stopped(prover_id)
-        .await
-        .map_err(|e| log::error!("Failed to unregister prover on server. Error: {}", e))
-        .ok();
+    // zksync_client
+    //     .prover_stopped(prover_id)
+    //     .await
+    //     .map_err(|e| log::error!("Failed to unregister prover on server. Error: {}", e))
+    //     .ok();
 
     Ok(())
 }
