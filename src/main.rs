@@ -21,7 +21,7 @@ use crate::prover_runner::prove_block;
 use crate::transfer::execute_commands;
 
 const PACKAGE: &str =
-    "hash:sha3:0bf9efb4822c5cfd5606e62698e1edac1951f1973d0d944ca1ad5f07:http://yacn.dev.golem.network:8000/ya-zksync-prover-0.2";
+    "hash:sha3:9a58401b24183d43eceffd3949f189bb1e14bd780e21c0109b91ce9b:http://yacn.dev.golem.network:8000/ya-zksync-prover-0.2.2";
 
 async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<rest::Agreement> {
     let deadline = Utc::now().add(chrono::Duration::minutes(25));

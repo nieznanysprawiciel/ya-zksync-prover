@@ -15,7 +15,7 @@ use ya_client_model::activity::{
 };
 use yarapi::rest::activity::DefaultActivity;
 use yarapi::rest::streaming::{ResultStream, StreamingActivity};
-use yarapi::rest::ExeScriptCommand;
+use yarapi::rest::{Activity, ExeScriptCommand, RunningBatch};
 use zksync_crypto::proof::EncodedProofPlonk;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -157,47 +157,59 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
         }),
     }];
 
-    let bar_max: u64 = 24720;
-    let bar = ProgressBar::new(bar_max);
+    use futures::{future, TryStreamExt};
 
     activity
-        .exec_streaming(commands)
+        .exec(commands)
         .await?
-        .stream()
-        .await?
-        .forward_to_file(
-            &PathBuf::from("stdout-output.txt"),
-            &PathBuf::from("stderr-output.txt"),
-        )?
-        .inspect(|event| match &event.kind {
-            RuntimeEventKind::StdOut(output) => bar.inc(match output {
-                CommandOutput::Str(text) => text.len(),
-                CommandOutput::Bin(vec) => vec.len(),
-            } as u64),
-            _ => (),
+        .events()
+        .try_for_each(|event| {
+            log::info!("event: {:?}", event);
+            future::ok(())
         })
-        .take_while(|event| {
-            ready(match &event.kind {
-                RuntimeEventKind::Finished {
-                    return_code,
-                    message,
-                } => {
-                    let no_msg = "".to_string();
-                    log::info!(
-                        "ExeUnit finished proving with code {}, and message: {}",
-                        return_code,
-                        message.as_ref().unwrap_or(&no_msg)
-                    );
-                    false
-                }
-                _ => true,
-            })
-        })
-        .for_each(|_| ready(()))
-        .await;
+        .await?;
 
-    bar.set_position(bar_max);
-    bar.finish_and_clear();
+    // let bar_max: u64 = 24720;
+    // let bar = ProgressBar::new(bar_max);
+
+    // activity
+    //     .exec_streaming(commands)
+    //     .await?
+    //     .stream()
+    //     .await?
+    //     .forward_to_file(
+    //         &PathBuf::from("stdout-output.txt"),
+    //         &PathBuf::from("stderr-output.txt"),
+    //     )?
+    //     .inspect(|event| match &event.kind {
+    //         RuntimeEventKind::StdOut(output) => bar.inc(match output {
+    //             CommandOutput::Str(text) => text.len(),
+    //             CommandOutput::Bin(vec) => vec.len(),
+    //         } as u64),
+    //         _ => (),
+    //     })
+    //     .take_while(|event| {
+    //         ready(match &event.kind {
+    //             RuntimeEventKind::Finished {
+    //                 return_code,
+    //                 message,
+    //             } => {
+    //                 let no_msg = "".to_string();
+    //                 log::info!(
+    //                     "ExeUnit finished proving with code {}, and message: {}",
+    //                     return_code,
+    //                     message.as_ref().unwrap_or(&no_msg)
+    //                 );
+    //                 false
+    //             }
+    //             _ => true,
+    //         })
+    //     })
+    //     .for_each(|_| ready(()))
+    //     .await;
+    //
+    // bar.set_position(bar_max);
+    // bar.finish_and_clear();
     Ok(())
 }
 
