@@ -140,7 +140,7 @@ pub async fn main() -> anyhow::Result<()> {
             loop {
                 match prove_block(zksync_client.clone(), activity.clone())
                     .await
-                    .map_err(|e| log::error!("{}", e))
+                    .map_err(|e| log::warn!("{}", e))
                 {
                     Err(_) => tokio::time::delay_for(Duration::from_secs(10)).await,
                     Ok(()) => (),

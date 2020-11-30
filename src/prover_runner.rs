@@ -99,6 +99,14 @@ pub async fn prove_block(
 
     log::info!("Proof downloaded. Publishing proof on server...");
 
+    fs::create_dir_all("proofs").ok();
+    save(
+        &PathBuf::from(format!("proofs/proof-{}.json", &block.block_id)),
+        &verified_proof,
+    )
+    .map_err(|e| log::warn!("Failed to debug save proof. {}", e))
+    .ok();
+
     zksync_client
         .publish(block.block_id, verified_proof)
         .await
