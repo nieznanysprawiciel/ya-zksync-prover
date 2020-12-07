@@ -32,4 +32,5 @@ VOLUME /blocks /proofs
 
 
 CMD []
+WORKDIR /
 ENTRYPOINT ["ya-entry.sh"]

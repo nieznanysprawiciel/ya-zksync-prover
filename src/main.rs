@@ -2,9 +2,7 @@ mod prover_runner;
 mod transfer;
 mod zksync_client;
 
-use anyhow::anyhow;
-use chrono::Utc;
-use futures::prelude::*;
+use chrono::{DateTime, Utc};
 use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
@@ -19,14 +17,16 @@ use zksync_client::ZksyncClient;
 
 use crate::prover_runner::prove_block;
 use crate::transfer::execute_commands;
+use ya_client_model::market::NewDemand;
 
 const PACKAGE: &str =
-    "hash:sha3:0bf9efb4822c5cfd5606e62698e1edac1951f1973d0d944ca1ad5f07:http://yacn.dev.golem.network:8000/ya-zksync-prover-0.2";
+    "hash:sha3:b491514aa88dc7f79ed461358cf9ea9c63775da591312f2f1a1dc43d:http://yacn.dev.golem.network:8000/ya-zksync-prover-0.2.3";
 
-async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<rest::Agreement> {
-    let deadline = Utc::now().add(chrono::Duration::minutes(25));
+pub fn create_demand(deadline: DateTime<Utc>, subnet: &str) -> NewDemand {
+    log::info!("Using subnet: {}", subnet);
+
     let ts = deadline.timestamp_millis();
-    let props = serde_json::json!({
+    let properties = serde_json::json!({
         "golem.node.id.name": "zk-sync-node",
         "golem.node.debug.subnet": subnet,
         "golem.srv.comp.task_package": PACKAGE,
@@ -35,55 +35,21 @@ async fn create_agreement(market: rest::Market, subnet: &str) -> anyhow::Result<
 
     let constraints = constraints![
         "golem.runtime.name" == Image::GVMKit((0, 2, 3).into()).runtime_name(),
-        "golem.node.debug.subnet" == subnet
+        "golem.node.debug.subnet" == subnet,
+        "golem.inf.mem.gib" > 5.5,
+        "golem.inf.storage.gib" > 1.0
     ]
     .to_string();
 
-    let subscription = market.subscribe(&props, &constraints).await?;
-    log::info!("Created subscription [{}]", subscription.id().as_ref());
-
-    let proposals = subscription.proposals();
-    futures::pin_mut!(proposals);
-    while let Some(proposal) = proposals.try_next().await? {
-        log::info!(
-            "Got proposal: {} -- from: {}, state: {:?}",
-            proposal.id(),
-            proposal.issuer_id(),
-            proposal.state()
-        );
-        if proposal.is_response() {
-            let agreement = proposal.create_agreement(deadline).await?;
-            if let Err(e) = agreement.confirm().await {
-                log::error!("wait_for_approval failed: {:?}", e);
-                continue;
-            }
-
-            // TODO: Use AgreementView.
-            let name = agreement
-                .content()
-                .await?
-                .offer
-                .properties
-                .pointer("/golem.node.id.name")
-                .map(|value| value.as_str().map(|name| name.to_string()))
-                .flatten()
-                .ok_or(anyhow!("Can't find node name in Agreement"))?;
-
-            log::info!("Created agreement [{}] with '{}'", agreement.id(), name);
-            return Ok(agreement);
-        }
-        proposal
-            .counter_proposal(&props, &constraints)
-            .await
-            .map_err(|e| log::warn!("Failed to counter Proposal. Error: {}", e))
-            .ok();
+    NewDemand {
+        properties,
+        constraints,
     }
-    unimplemented!()
 }
 
 #[derive(StructOpt)]
 struct Args {
-    #[structopt(long, env, default_value = "devnet-alpha.3")]
+    #[structopt(long, env, default_value = "community.3")]
     subnet: String,
     #[structopt(long, env = "YAGNA_APPKEY")]
     appkey: String,
@@ -110,14 +76,23 @@ pub async fn main() -> anyhow::Result<()> {
 
     let client = WebClient::with_token(&args.appkey);
     let session = rest::Session::with_client(client.clone());
+    let market = session.market()?;
 
-    let agreement = create_agreement(session.market()?, &args.subnet).await?;
+    let deadline = Utc::now().add(chrono::Duration::minutes(25));
+    let demand = create_demand(deadline, &args.subnet);
+
+    let subscription = market.subscribe_demand(demand.clone()).await?;
+    log::info!("Created subscription [{}]", subscription.id().as_ref());
+
+    let agreements = subscription
+        .negotiate_agreements(demand, 1, deadline)
+        .await?;
 
     log::info!("Registering prover..");
     let prover_id = zksync_client.register_prover(0).await?;
     log::info!("Registered prover under id [{}].", prover_id);
 
-    let activity = Arc::new(session.create_activity(&agreement).await?);
+    let activity = Arc::new(session.create_activity(&agreements[0]).await?);
 
     session
         .with(async {

@@ -19,6 +19,7 @@ gftp = { git = "https://github.com/golemfactory/yagna.git", rev = "75e8e3cc28c8d
 #gftp = "0.1.2"
 
 yarapi = { git = "https://github.com/golemfactory/yarapi", branch = "event-api-compatibility" }
+#yarapi = { path = "../../Golem/yarapi", branch = "event-api-compatibility" }
 
 zksync = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }
 zksync_prover = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }

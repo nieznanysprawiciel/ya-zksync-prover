@@ -165,12 +165,11 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
         }),
     }];
 
-    let bar_max: u64 = 24720;
+    let bar_max: u64 = 1644;
     let bar = ProgressBar::new(bar_max);
 
-    activity
-        .exec_streaming(commands)
-        .await?
+    let batch = activity.exec_streaming(commands).await?;
+    batch
         .stream()
         .await?
         .forward_to_file(
@@ -203,6 +202,7 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
         })
         .for_each(|_| ready(()))
         .await;
+    batch.wait_for_finish().await?;
 
     bar.set_position(bar_max);
     bar.finish_and_clear();
