@@ -1,2 +1,2 @@
 #!/bin/bash
-cd ${ZKSYNC_HOME}/infrastructure/zcli && yarn run start "$@"
+cd ${ZKSYNC_HOME}/infrastructure/zcli && yarn --silent run start "$@"
