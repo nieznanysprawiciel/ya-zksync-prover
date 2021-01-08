@@ -1,5 +1,4 @@
 mod prover_runner;
-mod transfer;
 mod zksync_client;
 
 use chrono::{DateTime, Utc};
@@ -16,7 +15,6 @@ use yarapi::ya_agreement_utils::{constraints, ConstraintKey, Constraints};
 use zksync_client::ZksyncClient;
 
 use crate::prover_runner::prove_block;
-use crate::transfer::execute_commands;
 use ya_client_model::market::NewDemand;
 
 const PACKAGE: &str =
@@ -84,27 +82,24 @@ pub async fn main() -> anyhow::Result<()> {
     let subscription = market.subscribe_demand(demand.clone()).await?;
     log::info!("Created subscription [{}]", subscription.id().as_ref());
 
-    let agreements = subscription
-        .negotiate_agreements(demand, 1, deadline)
-        .await?;
-
     log::info!("Registering prover..");
     let prover_id = zksync_client.register_prover(0).await?;
     log::info!("Registered prover under id [{}].", prover_id);
 
+    let agreements = subscription
+        .negotiate_agreements(demand, 1, deadline)
+        .await?;
     let activity = Arc::new(session.create_activity(&agreements[0]).await?);
 
     session
         .with(async {
             log::info!("Deploying image and starting ExeUnit...");
-            if let Err(e) = execute_commands(
-                activity.clone(),
-                vec![
+            if let Err(e) = activity
+                .execute_commands(vec![
                     rest::ExeScriptCommand::Deploy {},
                     rest::ExeScriptCommand::Start { args: vec![] },
-                ],
-            )
-            .await
+                ])
+                .await
             {
                 log::error!("Failed to initialize yagna task. Error: {}.", e);
                 return Ok(());

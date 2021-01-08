@@ -8,14 +8,11 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::transfer::Transfers;
 use crate::zksync_client::ZksyncClient;
-use ya_client_model::activity::{
-    Capture, CaptureFormat, CaptureMode, CommandOutput, RuntimeEventKind,
-};
+use ya_client_model::activity::{CommandOutput, RuntimeEventKind};
 use yarapi::rest::activity::DefaultActivity;
 use yarapi::rest::streaming::{ResultStream, StreamingActivity};
-use yarapi::rest::ExeScriptCommand;
+use yarapi::rest::Transfers;
 use zksync_crypto::proof::EncodedProofPlonk;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -38,8 +35,7 @@ pub async fn prove_block(
         &block.job_id
     );
 
-    let transfers = Transfers::new(activity.clone());
-    transfers
+    activity
         .send_json(&PathBuf::from_str("/blocks/job-info.json")?, &block)
         .await
         .map_err(|e| anyhow!("Transferring block info: {}", e))?;
@@ -76,7 +72,7 @@ pub async fn prove_block(
     // TODO: Remove downloading in future. Provider ExeUnit will do it.
     log::info!("Downloaded prover data. Uploading data to Provider...");
     let block_remote_path = PathBuf::from(format!("/blocks/block-{}.json", block.block_id));
-    transfers.send_json(&block_remote_path, &data).await?;
+    activity.send_json(&block_remote_path, &data).await?;
 
     log::info!("Block uploaded. Running prover on remote yagna node...");
     run_yagna_prover(activity.clone())
@@ -95,7 +91,7 @@ pub async fn prove_block(
     log::info!("Proof for block generated. Downloading...");
 
     let proof_path = PathBuf::from(format!("/proofs/proof-{}.json", &block.block_id));
-    let verified_proof: EncodedProofPlonk = transfers.download_json(&proof_path).await?;
+    let verified_proof: EncodedProofPlonk = activity.download_json(&proof_path).await?;
 
     log::info!("Proof downloaded. Publishing proof on server...");
 
@@ -151,24 +147,13 @@ async fn ask_for_block(zksync_client: Arc<ZksyncClient>) -> anyhow::Result<Block
 }
 
 async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> {
-    let capture = Some(CaptureMode::Stream {
-        limit: None,
-        format: Some(CaptureFormat::Str),
-    });
-
-    let commands = vec![ExeScriptCommand::Run {
-        entry_point: "/bin/yagna-prover".to_string(),
-        args: vec!["ya-prover".to_string()],
-        capture: Some(Capture {
-            stdout: capture.clone(),
-            stderr: capture,
-        }),
-    }];
-
     let bar_max: u64 = 1644;
     let bar = ProgressBar::new(bar_max);
 
-    let batch = activity.exec_streaming(commands).await?;
+    let batch = activity
+        .run_streaming("/bin/yagna-prover", vec!["ya-prover".to_string()])
+        .await?
+        .debug(".debug")?;
     batch
         .stream()
         .await?

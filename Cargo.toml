@@ -12,13 +12,10 @@ members = [
 ]
 
 [dependencies]
-ya-client = { git = "https://github.com/golemfactory/ya-client.git", rev = "50c530fb54fbb91a9ad743f43f2c6e0b3fc3b34f"}
-ya-client-model = { git = "https://github.com/golemfactory/ya-client.git", rev = "50c530fb54fbb91a9ad743f43f2c6e0b3fc3b34f"}
-ya-agreement-utils = { git = "https://github.com/golemfactory/yagna.git", rev = "75e8e3cc28c8dfeb4b1e319e36c2134a23367c19" }
-gftp = { git = "https://github.com/golemfactory/yagna.git", rev = "75e8e3cc28c8dfeb4b1e319e36c2134a23367c19" }
-#gftp = "0.1.2"
+ya-client = { git = "https://github.com/golemfactory/ya-client.git", rev = "e68bbd90c903c6f74f77fddb80a432d20e4e2b2a"}
+ya-client-model = { git = "https://github.com/golemfactory/ya-client.git", rev = "e68bbd90c903c6f74f77fddb80a432d20e4e2b2a"}
 
-yarapi = { git = "https://github.com/golemfactory/yarapi", branch = "event-api-compatibility" }
+yarapi = { git = "https://github.com/golemfactory/yarapi", branch = "messaging-through-streaming" }
 #yarapi = { path = "../../Golem/yarapi", branch = "event-api-compatibility" }
 
 zksync = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }
