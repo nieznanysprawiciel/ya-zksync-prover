@@ -4625,7 +4625,7 @@ dependencies = [
 [[package]]
 name = "yarapi"
 version = "0.3.0"
-source = "git+https://github.com/golemfactory/yarapi?branch=event-api-compatibility-patch#6b3736d8eee250e1edf1a7f6bce6dfd9b7758244"
+source = "git+https://github.com/golemfactory/yarapi?branch=event-api-compatibility-patch#504f238a6ed8e85714d6d9e9034643028dda3a31"
 dependencies = [
  "actix",
  "actix-rt",
