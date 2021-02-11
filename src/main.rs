@@ -34,7 +34,7 @@ pub fn create_demand(deadline: DateTime<Utc>, subnet: &str) -> NewDemand {
     let constraints = constraints![
         "golem.runtime.name" == Image::GVMKit((0, 2, 3).into()).runtime_name(),
         "golem.node.debug.subnet" == subnet,
-        "golem.inf.mem.gib" > 5.5,
+        "golem.inf.mem.gib" > 16,
         "golem.inf.storage.gib" > 1.0
     ]
     .to_string();
@@ -66,8 +66,6 @@ pub async fn main() -> anyhow::Result<()> {
         .filter_module("ya_service_bus::connection", log::LevelFilter::Off)
         .filter_module("ya_service_bus::remote_router", log::LevelFilter::Off)
         .init();
-
-    log::info!("Using subnet: {}", &args.subnet);
 
     let server_api_url: Url = args.server_api_url.parse()?;
     let zksync_client = ZksyncClient::new(&server_api_url, "yagna-node-1", Duration::from_secs(69));
