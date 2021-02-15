@@ -1576,8 +1576,9 @@ dependencies = [
 
 [[package]]
 name = "gftp"
-version = "0.1.2"
-source = "git+https://github.com/golemfactory/yagna.git?branch=2rec/bump-crates-ver#0f4ff7dbdcf769957a88650a47a1b1dbe7dc24ad"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da3b4c40d0c454c9be63c5d4ac3f3079c937d9825a1bebcb30adbe4cdaa03118"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -4425,7 +4426,8 @@ dependencies = [
 [[package]]
 name = "ya-agreement-utils"
 version = "0.2.0"
-source = "git+https://github.com/golemfactory/yagna.git?branch=2rec/bump-crates-ver#0f4ff7dbdcf769957a88650a47a1b1dbe7dc24ad"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0ec454c3f66bb2f635c8250e0d9c59e68a573a1c92c353836aee4b60816b5ff"
 dependencies = [
  "serde",
  "serde_json",
@@ -4437,7 +4439,8 @@ dependencies = [
 [[package]]
 name = "ya-client"
 version = "0.5.0"
-source = "git+https://github.com/golemfactory/ya-client.git?branch=release/v0.5#62e4757d5e1748e6606c3d7992a1a7956e52d8b8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43cf68fa232c9de768f3a8041d7725b6817e7561fdab22d462d485da37c65f4a"
 dependencies = [
  "awc",
  "bytes 0.5.6",
@@ -4465,7 +4468,8 @@ dependencies = [
 [[package]]
 name = "ya-client-model"
 version = "0.3.0"
-source = "git+https://github.com/golemfactory/ya-client.git?branch=release/v0.5#62e4757d5e1748e6606c3d7992a1a7956e52d8b8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d166700c6215a0a80f6e75bd33d74a5a4adb3715114bb3d47e4f9a33bb2a2fa2"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -4483,8 +4487,9 @@ dependencies = [
 
 [[package]]
 name = "ya-compile-time-utils"
-version = "0.1.0"
-source = "git+https://github.com/golemfactory/yagna.git?branch=2rec/bump-crates-ver#0f4ff7dbdcf769957a88650a47a1b1dbe7dc24ad"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1fe514f0473639df0d462a6d11085be76b293de3ed7ac6f82d58aa66cf2bdc7"
 dependencies = [
  "git-version",
  "metrics",
@@ -4494,8 +4499,9 @@ dependencies = [
 
 [[package]]
 name = "ya-core-model"
-version = "0.2.1"
-source = "git+https://github.com/golemfactory/yagna.git?branch=2rec/bump-crates-ver#0f4ff7dbdcf769957a88650a47a1b1dbe7dc24ad"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9e9b1ca35818d65ca0394126bea821f0f42626d89ce0cccad88ab4d43ce6f29"
 dependencies = [
  "chrono",
  "derive_more",
@@ -4512,8 +4518,9 @@ dependencies = [
 
 [[package]]
 name = "ya-sb-proto"
-version = "0.1.0"
-source = "git+https://github.com/golemfactory/ya-service-bus.git?rev=6b494e17d7a662e0b710af8c5a2e99ab4007fdb9#6b494e17d7a662e0b710af8c5a2e99ab4007fdb9"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba491b25b0ca2d03f697c7a734f79f7bb9550e570132bd95af53f62d52668424"
 dependencies = [
  "bytes 0.5.6",
  "prost",
@@ -4527,7 +4534,8 @@ dependencies = [
 [[package]]
 name = "ya-sb-util"
 version = "0.1.0"
-source = "git+https://github.com/golemfactory/ya-service-bus.git?rev=6b494e17d7a662e0b710af8c5a2e99ab4007fdb9#6b494e17d7a662e0b710af8c5a2e99ab4007fdb9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20b2e7cfeacabb607fe1fd1dc8e653c3ee853f2e127cb1ed72955ea4cb84f951"
 dependencies = [
  "futures 0.3.8",
  "pin-project 0.4.27",
@@ -4535,8 +4543,9 @@ dependencies = [
 
 [[package]]
 name = "ya-service-bus"
-version = "0.3.1"
-source = "git+https://github.com/golemfactory/ya-service-bus.git?rev=6b494e17d7a662e0b710af8c5a2e99ab4007fdb9#6b494e17d7a662e0b710af8c5a2e99ab4007fdb9"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7650b19a2f73f5d6cded3045756fc35048abc094781154d3145ca21dd68ce8c6"
 dependencies = [
  "actix",
  "flexbuffers",
@@ -4624,8 +4633,9 @@ dependencies = [
 
 [[package]]
 name = "yarapi"
-version = "0.3.0"
-source = "git+https://github.com/golemfactory/yarapi?branch=event-api-compatibility-patch#504f238a6ed8e85714d6d9e9034643028dda3a31"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79fb642186fb1d7d55efa4f0c8d00a8972ba7ccaf991f3c04cbea34c02e80612"
 dependencies = [
  "actix",
  "actix-rt",
