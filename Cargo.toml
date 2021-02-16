@@ -12,11 +12,11 @@ members = [
 ]
 
 [dependencies]
-ya-client = { git = "https://github.com/golemfactory/ya-client.git", rev = "e68bbd90c903c6f74f77fddb80a432d20e4e2b2a"}
-ya-client-model = { git = "https://github.com/golemfactory/ya-client.git", rev = "e68bbd90c903c6f74f77fddb80a432d20e4e2b2a"}
-
-yarapi = { git = "https://github.com/golemfactory/yarapi", branch = "messaging-through-streaming" }
-#yarapi = { path = "../../Golem/yarapi", branch = "event-api-compatibility" }
+ya-client = "0.5"
+ya-client-model = "0.3"
+ya-agreement-utils = "0.2"
+gftp = "0.2"
+yarapi = "0.4"
 
 zksync = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }
 zksync_prover = { git = "https://github.com/nieznanysprawiciel/zksync", branch = "yagna-prover/prototype" }
@@ -44,3 +44,18 @@ structopt = "0.3"
 tempfile = "3.1.0"
 tokio = { version = "0.2.10", features = ["fs"] }
 url = "2.1.1"
+
+[patch.crates-io]
+yarapi = { git = "https://github.com/golemfactory/yarapi", branch = "experimental-features" }
+#ya-client = { git = "https://github.com/golemfactory/ya-client.git", branch = "release/v0.5"}
+#ya-client-model = { git = "https://github.com/golemfactory/ya-client.git", branch = "release/v0.5"}
+#gftp = { git = "https://github.com/golemfactory/yagna.git", branch = "release/v0.6.0"}
+#ya-agreement-utils = { git = "https://github.com/golemfactory/yagna.git", branch = "release/v0.6.0"}
+#ya-compile-time-utils = { git = "https://github.com/golemfactory/yagna.git", branch = "release/v0.6.0"}
+#gftp = { git = "https://github.com/golemfactory/yagna.git", branch = "2rec/bump-crates-ver"}
+#ya-agreement-utils = { git = "https://github.com/golemfactory/yagna.git", branch = "2rec/bump-crates-ver"}
+#ya-compile-time-utils = { git = "https://github.com/golemfactory/yagna.git", branch = "2rec/bump-crates-ver"}
+#ya-service-bus = { git = "https://github.com/golemfactory/ya-service-bus.git", rev = "6b494e17d7a662e0b710af8c5a2e99ab4007fdb9"}
+#ya-sb-proto = { git = "https://github.com/golemfactory/ya-service-bus.git", rev = "6b494e17d7a662e0b710af8c5a2e99ab4007fdb9"}
+##ya-sb-router = { git = "https://github.com/golemfactory/ya-service-bus.git", rev = "6b494e17d7a662e0b710af8c5a2e99ab4007fdb9"}
+#ya-sb-util = { git = "https://github.com/golemfactory/ya-service-bus.git", rev = "6b494e17d7a662e0b710af8c5a2e99ab4007fdb9"}
