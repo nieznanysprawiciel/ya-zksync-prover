@@ -150,6 +150,8 @@ async fn run_yagna_prover(activity: Arc<DefaultActivity>) -> anyhow::Result<()> 
     let bar_max: u64 = 1644;
     let bar = ProgressBar::new(bar_max);
 
+    bar.inc(0);
+
     let batch = activity
         .run_streaming("/bin/yagna-prover", vec!["ya-prover".to_string()])
         .await?
